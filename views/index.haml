@@ -1,5 +1,5 @@
 %h1
-  %a{ :href => "/" }= @title
+  = @title
   %small= @subheading
 
 #sidebar
@@ -7,4 +7,4 @@
 
 #content
   - @articles.each do |article|
-    = haml :summary, :layout => false, :locals => { :article => article, :heading => :h2 }
+    = haml :summary, :layout => false, :locals => { :article => article }
