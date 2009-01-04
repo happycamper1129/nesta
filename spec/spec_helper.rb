@@ -70,7 +70,7 @@ module ModelFactory
   
   def delete_page(type, permalink)
     path = Nesta::Configuration.send "#{type}_path"
-    FileUtils.rm(filename(path, permalink))
+    FileUtils.rm(File.join(path, "#{permalink}.mdown"))
   end
   
   def remove_fixtures
