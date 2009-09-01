@@ -86,9 +86,9 @@ error do
   haml(:error)
 end unless Sinatra::Application.environment == :development
 
-get "/css/:sheet.css" do
+get "/css/master.css" do
   content_type "text/css", :charset => "utf-8"
-  cache sass(params[:sheet].to_sym)
+  cache sass(:master)
 end
 
 get "/" do
