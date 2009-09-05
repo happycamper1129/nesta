@@ -40,8 +40,8 @@ helpers do
     "#{Nesta::Configuration.article_prefix}/#{article.permalink}"
   end
 
-  def category_path(category)
-    "#{Nesta::Configuration.category_prefix}/#{category.permalink}"
+  def page_path(page)
+    "/" + page.permalink
   end
   
   def url_for(page)
@@ -86,9 +86,9 @@ error do
   haml(:error)
 end unless Sinatra::Application.environment == :development
 
-get "/css/master.css" do
+get "/css/:sheet.css" do
   content_type "text/css", :charset => "utf-8"
-  cache sass(:master)
+  cache sass(params[:sheet].to_sym)
 end
 
 get "/" do
