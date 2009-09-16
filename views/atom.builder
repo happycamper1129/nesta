@@ -1,10 +1,11 @@
 xml.instruct!
 xml.feed :xmlns => "http://www.w3.org/2005/Atom" do
-  xml.title @title, :type => "text"
+  xml.title @title
   xml.generator "Nesta", :uri => "http://effectif.com/nesta"
   xml.id atom_id
   xml.link :href => "#{base_url}/articles.xml", :rel => "self"
   xml.link :href => base_url, :rel => "alternate"
+  xml.title @title, :type => "text"
   xml.subtitle @subtitle, :type => "text"
   xml.author do
     xml.name @author["name"] if @author["name"]
