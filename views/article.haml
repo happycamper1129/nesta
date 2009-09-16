@@ -1,34 +1,25 @@
 .breadcrumb
   %a{ :href => "/" }= @site_title
   &gt;
-  - if @page.parent
-    %a{ :href => @page.parent.abspath }= @page.parent.heading
+  - if @article.parent
+    %a{ :href => category_path(@article.parent) }= @article.parent.heading
     &gt;
-  = @page.heading
+  = @article.heading
 
 #sidebar
   = haml :categories, :layout => false
   = haml :feed, :layout => false
 
 #content
-  - if @page.date
-    .date= format_date(@page.date)
-  ~ @page.to_html
+  - if @article.date
+    .date= format_date(@article.date)
+  ~ @article.to_html
 
-  - @page.pages.each do |page|
-    = haml :summary, :layout => false, :locals => { :article => page, :heading => :h3 }
-
-  - unless @page.articles.empty?
-    %h2.articles= "Articles on #{@page.heading}"
-  
-  - @page.articles.each do |article|
-    = haml :summary, :layout => false, :locals => { :article => article, :heading => :h3 }
-
-  - unless @page.categories.empty?
+  - unless @article.categories.empty?
     .categories
       Filed under
-      - @page.categories.each do |category|
-        %a{ :href => category.abspath }= category.heading
+      - @article.categories.each do |category|
+        %a{ :href => category_path(category) }= category.heading
 
   = haml :social, :layout => false
   = haml :feed, :locals => { :title => @site_title }, :layout => false

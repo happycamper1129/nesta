@@ -1,8 +1,5 @@
 require "yaml"
 
-require "rubygems"
-require "sinatra"
-
 module Nesta
   class Configuration
 
@@ -32,24 +29,36 @@ module Nesta
       configuration["author"]
     end
     
+    def self.article_path
+      File.join(content_path, "articles")
+    end
+    
+    def self.comment_path
+      File.join(content_path, "comments")
+    end
+    
+    def self.category_path
+      File.join(content_path, "categories")
+    end
+    
+    def self.attachment_path
+      File.join(content_path, "attachments")
+    end
+    
+    def self.content_path
+      get(environment)["content"]
+    end
+    
     def self.google_analytics_code
       get(environment)["google_analytics_code"]
     end
     
-    def self.content_path(basename = nil)
-      get_path(get(environment)["content"], basename)
+    def self.article_prefix
+      get("prefixes")["article"] || "/articles"
     end
     
-    def self.page_path(basename = nil)
-      get_path(File.join(content_path, "pages"), basename)
-    end
-    
-    def self.comment_path(basename = nil)
-      get_path(File.join(content_path, "comments"), basename)
-    end
-    
-    def self.attachment_path(basename = nil)
-      get_path(File.join(content_path, "attachments"), basename)
+    def self.category_prefix
+      get("prefixes")["category"] || ""
     end
     
     private
@@ -64,10 +73,6 @@ module Nesta
       
       def self.get(key, default = {})
         configuration[key].nil? ? default : configuration[key]
-      end
-      
-      def self.get_path(dirname, basename)
-        basename.nil? ? dirname : File.join(dirname, basename)
       end
   end
 end

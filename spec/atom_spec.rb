@@ -28,7 +28,7 @@ describe "atom feed" do
   end
   
   it "should have an ID element" do
-    body.should have_tag("/feed/id", "tag:example.org,2009:/")
+    body.should have_tag("/feed/id", "tag:example.org,2009:/articles")
   end
   
   it "should have an alternate link element" do
@@ -53,21 +53,18 @@ describe "atom feed" do
 
   describe "for article" do
     before(:each) do
-      @heading = "Heading"
-      @articles = []
-      @category = create_category
       11.times do |i|
-        @articles << create_article(
+        create_article(
           :title => "Article #{i + 1}",
-          :path => "article-#{i + 1}",
+          :permalink => "article-#{i + 1}",
           :metadata => {
-            "categories" => @category.path,
+            "categories" => "my-category",
             "date" => "#{i + 1} January 2009"
           },
-          :content => "Blah blah\n\n## #{@heading}\n\n"
+          :content => "Blah blah\n\n## Heading\n\n"
         )
       end
-      @article = @articles.last
+      create_category
       get "/articles.xml"
     end
     
@@ -76,14 +73,14 @@ describe "atom feed" do
     end
     
     it "should link to the HTML version" do
-      url = "http://example.org/#{@article.path}"
+      url = "http://example.org/articles/article-11"
       body.should have_tag(
           "entry/link[@href=#{url}][@rel=alternate][@type=text/html]")
     end
     
     it "should define unique ID" do
       body.should have_tag(
-          "entry/id", "tag:example.org,2009-01-11:#{@article.abspath}")
+          "entry/id", "tag:example.org,2009-01-11:/articles/article-11")
     end
     
     it "should specify date published" do
@@ -91,27 +88,26 @@ describe "atom feed" do
     end
 
     it "should specify article categories" do
-      body.should have_tag("category[@term=#{@category.permalink}]")
+      body.should have_tag("category[@term=my-category]")
     end
 
     it "should have article content" do
-      body.should have_tag(
-          "entry/content[@type=html]", /<h2[^>]*>#{@heading}<\/h2>/)
+      body.should have_tag("entry/content[@type=html]", /<h2[^>]*>Heading<\/h2>/)
     end
     
     it "should not include article heading in content" do
-      body.should_not have_tag("entry/summary", /#{@article.heading}/)
+      body.should_not have_tag("entry/summary", /Article 11/)
     end
     
     it "should list the latest 10 articles" do
       body.should have_tag("entry", :count => 10)
-      body.should_not have_tag("entry/title", @articles.first.heading)
+      body.should_not have_tag("entry/title", "Article 1")
     end
   end
   
-  describe "page with no date" do
+  describe "article with no date" do
     before(:each) do
-      create_category(:path => "no-date")
+      create_article(:permalink => "no-date")
       get "/articles.xml"
     end
 
@@ -129,5 +125,30 @@ describe "atom feed" do
       get "/articles.xml"
       body.should have_tag("entry/id", "use-this-id")
     end
+  end
+end
+
+describe "atom feed with article prefix" do
+  include ModelFactory
+  include RequestSpecHelper
+
+  before(:each) do
+    stub_configuration
+    stub_config_key("prefixes", { "article" => "/foo" })
+  end
+
+  after(:each) do
+    remove_fixtures
+  end
+  
+  it "should incldue article prefix in feed" do
+    create_article(
+      :permalink => "article-1",
+      :metadata => {
+        "date" => "1 January 2009"
+      }
+    )
+    get "/articles.xml"
+    body.should have_tag("link[@href=http://example.org/foo/article-1]")
   end
 end
