@@ -7,53 +7,8 @@ require "sass"
 require "lib/cache"
 require "lib/configuration"
 require "lib/models"
-require "lib/path"
 
 set :cache_enabled, Nesta::Configuration.cache
-
-class Renderer
-  def self.local_views
-    File.join(Nesta::Path.local, "views")
-  end
-  
-  def self.theme_views
-    if Nesta::Configuration.theme.nil?
-      nil
-    else
-      File.join(Nesta::Path.themes, Nesta::Configuration.theme, "views")
-    end
-  end
-  
-  def self.engine
-    raise "Not implemented"
-  end
-  
-  def self.template_exists?(views, template)
-    views && File.exist?(File.join(views, "#{template}.#{engine}"))
-  end
-
-  def self.options(template)
-    if template_exists?(local_views, template)
-      { :views => local_views }
-    elsif template_exists?(theme_views, template)
-      { :views => theme_views }
-    else
-      {}
-    end
-  end
-end
-
-class HamlRenderer < Renderer
-  def self.engine
-    :haml
-  end
-end
-
-class SassRenderer < Renderer
-  def self.engine
-    :sass
-  end
-end
 
 helpers do
   def set_from_config(*variables)
@@ -111,11 +66,11 @@ helpers do
   end
   
   def haml(template, options = {}, locals = {})
-    super(template, options.merge(HamlRenderer.options(template)), locals)
+    super(template, options.merge(render_options(:haml, template)), locals)
   end
   
   def sass(template, options = {}, locals = {})
-    super(template, options.merge(SassRenderer.options(template)), locals)
+    super(template, options.merge(render_options(:sass, template)), locals)
   end
 end
 
@@ -142,13 +97,21 @@ end unless Sinatra::Application.environment == :development
 # changes to Nesta's behaviour that are likely to conflict with future
 # changes to the main code base.
 #
-# Note that you can modify the behaviour of any of the default actions
-# (defined below) in local/app.rb, or replace any of the default view
-# templates by creating replacements of the same name in local/views.
-#
+# Note that you can modify the behaviour of any of the default objects
+# in local/app.rb, or replace any of the default view templates by
+# creating replacements of the same name in local/views.
 begin
-  require File.join(File.dirname(__FILE__), Nesta::Path.local, "app")
+  require File.join(File.dirname(__FILE__), "local", "app")
 rescue LoadError
+end
+
+def render_options(engine, template)
+  local_views = File.join("local", "views")
+  if File.exist?(File.join(local_views, "#{template}.#{engine}"))
+    { :views => local_views }
+  else
+    {}
+  end
 end
 
 get "/css/:sheet.css" do
