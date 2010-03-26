@@ -5,7 +5,6 @@ require "sinatra"
 
 module Nesta
   class Configuration
-
     @@yaml = nil
 
     def self.cache
@@ -30,6 +29,10 @@ module Nesta
     
     def self.author
       configuration["author"]
+    end
+    
+    def self.theme
+      configuration["theme"]
     end
     
     def self.google_analytics_code
