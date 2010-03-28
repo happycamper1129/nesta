@@ -5,17 +5,15 @@ require "haml"
 require "sass"
 
 require "lib/cache"
-require "lib/config"
+require "lib/configuration"
 require "lib/models"
-require "lib/path"
-require "lib/overrides"
 
-set :cache_enabled, Nesta::Config.cache
+set :cache_enabled, Nesta::Configuration.cache
 
 helpers do
   def set_from_config(*variables)
     variables.each do |var|
-      instance_variable_set("@#{var}", Nesta::Config.send(var))
+      instance_variable_set("@#{var}", Nesta::Configuration.send(var))
     end
   end
   
@@ -27,7 +25,7 @@ helpers do
     if page.respond_to?(:parent) && page.parent
       @title = "#{page.heading} - #{page.parent.heading}"
     else
-      @title = "#{page.heading} - #{Nesta::Config.title}"
+      @title = "#{page.heading} - #{Nesta::Configuration.title}"
     end
   end
   
@@ -37,9 +35,8 @@ helpers do
   
   def set_common_variables
     @menu_items = Page.menu_items
-    @site_title = Nesta::Config.title
+    @site_title = Nesta::Configuration.title
     set_from_config(:title, :subtitle, :google_analytics_code)
-    @heading = @title
   end
 
   def url_for(page)
@@ -49,7 +46,12 @@ helpers do
   def base_url
     url = "http://#{request.host}"
     request.port == 80 ? url : url + ":#{request.port}"
-  end  
+  end
+  
+  def absolute_urls(text)
+    text.gsub!(/(<a href=['"])\//, '\1' + base_url + '/')
+    text
+  end
   
   def nesta_atom_id_for_page(page)
     published = page.date.strftime('%Y-%m-%d')
@@ -69,13 +71,11 @@ helpers do
   end
   
   def haml(template, options = {}, locals = {})
-    render_options = Nesta::Overrides.render_options(template, :haml)
-    super(template, render_options.merge(options), locals)
+    super(template, options.merge(render_options(:haml, template)), locals)
   end
   
   def sass(template, options = {}, locals = {})
-    render_options = Nesta::Overrides.render_options(template, :sass)
-    super(template, render_options.merge(options), locals)
+    super(template, options.merge(render_options(:sass, template)), locals)
   end
 end
 
@@ -102,13 +102,22 @@ end unless Sinatra::Application.environment == :development
 # changes to Nesta's behaviour that are likely to conflict with future
 # changes to the main code base.
 #
-# Note that you can modify the behaviour of any of the default actions
-# (defined below) in local/app.rb, or replace any of the default view
-# templates by creating replacements of the same name in local/views.
-#
+# Note that you can modify the behaviour of any of the default objects
+# in local/app.rb, or replace any of the default view templates by
+# creating replacements of the same name in local/views.
+begin
+  require File.join(File.dirname(__FILE__), "local", "app")
+rescue LoadError
+end
 
-Nesta::Overrides.load_theme_app
-Nesta::Overrides.load_local_app
+def render_options(engine, template)
+  local_views = File.join("local", "views")
+  if File.exist?(File.join(local_views, "#{template}.#{engine}"))
+    { :views => local_views }
+  else
+    {}
+  end
+end
 
 get "/css/:sheet.css" do
   content_type "text/css", :charset => "utf-8"
@@ -127,7 +136,7 @@ end
 
 get %r{/attachments/([\w/.-]+)} do
   file = File.join(
-      Nesta::Config.attachment_path, params[:captures].first)
+      Nesta::Configuration.attachment_path, params[:captures].first)
   send_file(file, :disposition => nil)
 end
 
@@ -141,8 +150,8 @@ end
 get "/sitemap.xml" do
   content_type :xml, :charset => "utf-8"
   @pages = Page.find_all
-  @last = @pages.map { |page| page.last_modified }.inject do |latest, this|
-    this > latest ? this : latest
+  @last = @pages.map { |page| page.last_modified }.inject do |latest, page|
+    (page > latest) ? page : latest
   end
   cache builder(:sitemap)
 end
