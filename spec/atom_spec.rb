@@ -64,7 +64,7 @@ describe "atom feed" do
             "categories" => @category.path,
             "date" => "#{i + 1} January 2009"
           },
-          :content => "Blah blah\n\n## #{@heading}\n\n[link](/foo)"
+          :content => "Blah blah\n\n## #{@heading}\n\n"
         )
       end
       @article = @articles.last
@@ -97,10 +97,6 @@ describe "atom feed" do
     it "should have article content" do
       body.should have_tag(
           "entry/content[@type=html]", /<h2[^>]*>#{@heading}<\/h2>/)
-    end
-    
-    it "should include hostname in URLs" do
-      body.should have_tag("entry/content", /href='http:\/\/example.org\/foo/)
     end
     
     it "should not include article heading in content" do
