@@ -10,7 +10,7 @@ require "lib/models"
 require "lib/path"
 require "lib/overrides"
 
-set :cache_enabled, (Nesta::Config.cache == "true")
+set :cache_enabled, Nesta::Config.cache
 
 helpers do
   def set_from_config(*variables)
@@ -81,6 +81,12 @@ helpers do
   def sass(template, options = {}, locals = {})
     render_options = Nesta::Overrides.render_options(template, :sass)
     super(template, render_options.merge(options), locals)
+  end
+  
+  def local_stylesheet?
+    # Checks for the existence of local/views/local.sass. Useful for themes
+    # that want to give the user the option to add their own CSS rules.
+    File.exist?(File.join(File.dirname(__FILE__), *%w[local views local.sass]))
   end
 end
 
