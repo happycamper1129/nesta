@@ -3,13 +3,12 @@ require "builder"
 require "haml"
 require "sass"
 
-require File.expand_path('cache', File.dirname(__FILE__))
-require File.expand_path('config', File.dirname(__FILE__))
-require File.expand_path('models', File.dirname(__FILE__))
-require File.expand_path('navigation', File.dirname(__FILE__))
-require File.expand_path('overrides', File.dirname(__FILE__))
-require File.expand_path('path', File.dirname(__FILE__))
-require File.expand_path('plugins', File.dirname(__FILE__))
+require File.expand_path('lib/cache', File.dirname(__FILE__))
+require File.expand_path('lib/config', File.dirname(__FILE__))
+require File.expand_path('lib/models', File.dirname(__FILE__))
+require File.expand_path('lib/path', File.dirname(__FILE__))
+require File.expand_path('lib/plugins', File.dirname(__FILE__))
+require File.expand_path('lib/overrides', File.dirname(__FILE__))
 
 Nesta::Plugins.load_local_plugins
 
@@ -17,11 +16,10 @@ module Nesta
   class App < Sinatra::Base
     register Sinatra::Cache
 
-    set :views, File.expand_path('../../views', File.dirname(__FILE__))
+    set :root, File.dirname(__FILE__)
     set :cache_enabled, Config.cache
 
     helpers Overrides::Renderers
-    helpers Navigation::Renderers
 
     helpers do
       def set_from_config(*variables)
@@ -44,6 +42,26 @@ module Nesta
         end
       end
   
+      def display_menu(menu, options = {})
+        defaults = { :class => nil, :levels => 2 }
+        options = defaults.merge(options)
+        if options[:levels] > 0
+          haml_tag :ul, :class => options[:class] do
+            menu.each do |item|
+              haml_tag :li do
+                if item.respond_to?(:each)
+                  display_menu(item, :levels => (options[:levels] - 1))
+                else
+                  haml_tag :a, :href => item.abspath do
+                    haml_concat item.heading
+                  end
+                end
+              end
+            end
+          end
+        end
+      end
+
       def no_widow(text)
         text.split[0...-1].join(" ") + "&nbsp;#{text.split[-1]}"
       end
@@ -87,10 +105,11 @@ module Nesta
       end
   
       def local_stylesheet?
-        # Checks for the existence of views/local.sass. Useful for
+        # Checks for the existence of local/views/local.sass. Useful for
         # themes that want to give the user the option to add their own
         # CSS rules.
-        File.exist?(File.expand_path('views/local.sass', Nesta::App.root))
+        File.exist?(
+            File.join(File.dirname(__FILE__), *%w[local views local.sass]))
       end
     end
 
@@ -102,48 +121,39 @@ module Nesta
     error do
       set_common_variables
       haml(:error)
-    end unless Nesta::App.environment == :development
+    end unless Sinatra::Application.environment == :development
 
     # If you want to change Nesta's behaviour, you have two options:
     #
-    # 1. Create an app.rb file in your project's root directory.
-    # 2. Make a theme or a plugin, and put the relevant code in there.
+    # 1. Edit the code. You can merge in future upstream changes with git.
+    # 2. Add code to local/app.rb that overrides the default behaviour,
+    #    leaving the default files untouched (no "tricky" merging required).
     #
-    # You can add new routes, or modify the behaviour of any of the
-    # default objects in app.rb, or replace any of the default view
-    # templates by creating replacements of the same name in a ./views
-    # folder situated in the root directory of the project for your
-    # site.
+    # Neither way is necessarily *better* than the other; it's up to you to
+    # choose the most appropriate course of action for your site. Merging
+    # future changes in will typically be a straightforward task, but you may
+    # find the ./local directory to be an easy way to manage more significant
+    # changes to Nesta's behaviour that are likely to conflict with future
+    # changes to the main code base.
     #
-    # Your ./views folder gets searched first when rendering a template
-    # or Sass file, then the currently configured theme is searched, and
-    # finally Nesta will check if the template exists in the views
-    # folder in the Nesta gem (which is where the default look and feel
-    # is defined).
-    #
+    # Note that you can modify the behaviour of any of the default objects
+    # in local/app.rb, or replace any of the default view templates by
+    # creating replacements of the same name in local/views.
     Overrides.load_local_app
     Overrides.load_theme_app
 
-    get '/robots.txt' do
-      content_type 'text/plain', :charset => 'utf-8'
-      <<-EOF
-# robots.txt
-# See http://en.wikipedia.org/wiki/Robots_exclusion_standard
-      EOF
-    end
-
-    get '/css/:sheet.css' do
-      content_type 'text/css', :charset => 'utf-8'
+    get "/css/:sheet.css" do
+      content_type "text/css", :charset => "utf-8"
       cache sass(params[:sheet].to_sym)
     end
 
-    get '/' do
+    get "/" do
       set_common_variables
       set_from_config(:title, :subtitle, :description, :keywords)
       @heading = @title
       @title = "#{@title} - #{@subtitle}"
       @articles = Page.find_articles[0..7]
-      @body_class = 'home'
+      @body_class = "home"
       cache haml(:index)
     end
 
@@ -152,15 +162,15 @@ module Nesta
       send_file(file, :disposition => nil)
     end
 
-    get '/articles.xml' do
-      content_type :xml, :charset => 'utf-8'
+    get "/articles.xml" do
+      content_type :xml, :charset => "utf-8"
       set_from_config(:title, :subtitle, :author)
       @articles = Page.find_articles.select { |a| a.date }[0..9]
       cache builder(:atom)
     end
 
-    get '/sitemap.xml' do
-      content_type :xml, :charset => 'utf-8'
+    get "/sitemap.xml" do
+      content_type :xml, :charset => "utf-8"
       @pages = Page.find_all
       @last = @pages.map { |page| page.last_modified }.inject do |latest, page|
         (page > latest) ? page : latest
@@ -168,9 +178,9 @@ module Nesta
       cache builder(:sitemap)
     end
 
-    get '*' do
+    get "*" do
       set_common_variables
-      parts = params[:splat].map { |p| p.sub(/\/$/, '') }
+      parts = params[:splat].map { |p| p.sub(/\/$/, "") }
       @page = Nesta::Page.find_by_path(File.join(parts))
       raise Sinatra::NotFound if @page.nil?
       set_title(@page)

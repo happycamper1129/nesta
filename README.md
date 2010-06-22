@@ -12,34 +12,33 @@ pushing to a git repository.
 
 ## Installation
 
-Begin by installing the gem:
+Begin by cloning the git repository:
 
-    $ gem install nesta
+    $ git clone git://github.com/gma/nesta.git
 
-Then use the `nesta` command to generate a new site:
+Nesta's dependencies are managed with bundler, which handles installing the
+necessary gems for you:
 
-    $ nesta new mysite.com
-
-If you intend to deploy to Heroku, you'll also want the Heroku rake
-tasks, so run this version instead:
-
-    $ nesta new --heroku mysite.com
-
-Install a few dependencies, and you're away:
-
-    $ cd mysite.com
+    $ gem install bundler
+    $ cd nesta
     $ bundle install
 
-You'll find basic configuration options for your site in
-`config/config.yml`. The defaults will work, but you'll want to tweak it
-before you go very far.
+You'll need a config file. You can start with the default and tweak it to suit
+later:
+
+    $ cp config/config.yml.sample config/config.yml
+
+Create some sample web pages (optional):
+
+    $ bundle exec rake setup:sample_content
 
 That's it - you can launch a local web server in development mode using
 shotgun...
 
     $ bundle exec shotgun config.ru
 
-...then point your web browser at http://localhost:9393. Start editing
-the files in `content/pages` (see [Creating Your
-Content](http://effectif.com/nesta/creating-content) for full
-instructions).
+...then point your web browser at http://localhost:9393. Start editing the
+files in `nesta/content`, and you're on your way.
+
+See [http://effectif.com/nesta](http://effectif.com/nesta) for more
+documentation.
