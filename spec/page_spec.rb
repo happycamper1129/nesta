@@ -1,5 +1,5 @@
-require File.expand_path("model_factory", File.dirname(__FILE__))
-require File.expand_path("spec_helper", File.dirname(__FILE__))
+require File.expand_path('spec_helper', File.dirname(__FILE__))
+require File.expand_path('model_factory', File.dirname(__FILE__))
 
 describe "page with keyword and description", :shared => true do
   it "should set the keywords meta tag" do
@@ -56,6 +56,7 @@ describe "page that can display menus", :shared => true do
 end
 
 describe "The layout" do
+  include ConfigSpecHelper
   include ModelFactory
   include RequestSpecHelper
   
@@ -66,14 +67,15 @@ describe "The layout" do
   end
   
   it "should include GA JavaScript if configured" do
-    stub_env_config_key("google_analytics_code", "UA-1234")
+    stub_config_key('google_analytics_code', 'UA-1234', :rack_env => true)
     stub_configuration
-    get "/"
-    body.should have_tag("script", /'_setAccount', 'UA-1234'/)
+    get '/'
+    body.should have_tag('script', /'_setAccount', 'UA-1234'/)
   end
 end
 
 describe "The home page" do
+  include ConfigSpecHelper
   include ModelFactory
   include RequestSpecHelper
   
@@ -110,13 +112,14 @@ describe "The home page" do
   end
   
   it "should display site title in h1 tag" do
-    do_get
-    body.should have_tag('#header p.title', /My blog/)
+    pending "Hpricot doesn't support HTML5"
+    body.should have_tag('hgroup h1', /My blog/)
   end
   
-  it "should display site subtitle in h1 tag" do
+  it "should display site subtitle in heading tag" do
+    pending "Hpricot doesn't support HTML5"
     do_get
-    body.should have_tag('#header p.subtitle', /about stuff/)
+    body.should have_tag('hgroup h2', /about stuff/)
   end
   
   it "should set description meta tag" do
@@ -157,7 +160,7 @@ describe "The home page" do
     
     it "should display link to article in h2 tag" do
       body.should have_tag(
-          "h2 a[@href=#{@article.abspath}]", /^\s*#{@article.heading}$/)
+          "h1 a[@href=#{@article.abspath}]", /^\s*#{@article.heading}$/)
     end
     
     it "should display article summary if available" do
@@ -171,6 +174,7 @@ describe "The home page" do
 end
 
 describe "An article" do
+  include ConfigSpecHelper
   include ModelFactory
   include RequestSpecHelper
   
@@ -224,7 +228,7 @@ describe "An article" do
 
   it "should display the date" do
     do_get
-    body.should have_tag("div.date", @date)
+    body.should have_tag("time", @date)
   end
 
   it "should display the content" do
@@ -248,18 +252,19 @@ describe "An article" do
     end
     
     it "should link to each category" do
+      pending "Hpricot doesn't support HTML5"
       do_get
-      body.should have_tag("div.categories", /Categories/)
-      body.should have_tag("div.categories") do |categories|
+      body.should have_tag("nav.categories") do |categories|
         categories.should have_tag("a[@href=/banana]", "Banana")
         categories.should have_tag("a[@href=/the-apple]", "Apple")
       end
     end
 
     it "should link to a category in breadcrumb" do
+      pending "Hpricot doesn't support HTML5"
       do_get
       body.should have_tag(
-          "div.breadcrumb/a[@href=#{@category.abspath}]", @category.heading)
+          "nav.breadcrumb/a[@href=#{@category.abspath}]", @category.heading)
     end
     
     it "should contain category name in page title" do
@@ -271,6 +276,7 @@ describe "An article" do
 end
 
 describe "A page" do
+  include ConfigSpecHelper
   include ModelFactory
   include RequestSpecHelper
   
@@ -338,7 +344,7 @@ describe "A page" do
       it "should display links to articles" do
         do_get
         body.should have_tag(
-            "h3 a[@href='#{@article.abspath}']", /^\s*#{@article.heading}$/)
+            "h1 a[@href='#{@article.abspath}']", /^\s*#{@article.heading}$/)
         body.should_not have_tag("h3", @article2.heading)
       end
     end
@@ -364,6 +370,7 @@ describe "A page" do
 end
 
 describe "A Haml page" do
+  include ConfigSpecHelper
   include ModelFactory
   include RequestSpecHelper
 
@@ -388,6 +395,7 @@ describe "A Haml page" do
 end
 
 describe "attachments" do
+  include ConfigSpecHelper
   include ModelFactory
   include RequestSpecHelper
 

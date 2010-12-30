@@ -42,14 +42,8 @@ module Nesta
       @@cache = {}
     end
 
-    def self.deprecated(name, message)
-      if Sinatra::Application.environment != :test
-        $stderr.puts "DEPRECATION WARNING: #{name} is deprecated; #{message}"
-      end
-    end
-
     def self.menu_items
-      deprecated("Page.menu_items", "see Menu.top_level and Menu.for_path")
+      Nesta.deprecated('Page.menu_items', 'see Menu.top_level and Menu.for_path')
       Menu.top_level
     end
 
@@ -249,7 +243,7 @@ module Nesta
 
     def self.full_menu
       menu = []
-      menu_file = Nesta::Config.content_path("menu.txt")
+      menu_file = Nesta::Config.content_path('menu.txt')
       if File.exist?(menu_file)
         File.open(menu_file) { |file| append_menu_item(menu, file, 0) }
       end
